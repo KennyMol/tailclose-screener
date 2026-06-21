@@ -50,4 +50,5 @@ test("loads strategies and refreshes mobile screening results", async () => {
   await screen.findByText("600000");
   expect(screen.getByText("浦发银行")).toBeInTheDocument();
   expect(screen.getByText("+2.1%")).toBeInTheDocument();
+  expect(screen.queryByText(/评分/)).not.toBeInTheDocument();
 });

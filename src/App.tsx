@@ -161,7 +161,6 @@ export function App() {
               <div className="metrics">
                 <span>最新 {result.latestPrice?.toFixed(2) ?? "--"}</span>
                 <span>量比 {formatNumber(result.volumeRatio)}</span>
-                <span>评分 {result.score}</span>
               </div>
               <p className="reasons">{result.reasons.join(" / ")}</p>
             </article>
