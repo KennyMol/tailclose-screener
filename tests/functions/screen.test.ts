@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getScreenPayload } from "../_shared/screenService";
+import { getScreenPayload } from "../../functions/_shared/screenService";
 
 describe("getScreenPayload", () => {
   it("returns matching stock results with reasons", async () => {
