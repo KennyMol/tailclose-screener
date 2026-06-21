@@ -16,3 +16,30 @@ The planned app lets the user open a public URL in Safari, select a strategy, ta
 ## Design
 
 See [docs/superpowers/specs/2026-06-20-tail-close-ios-pwa-design.md](docs/superpowers/specs/2026-06-20-tail-close-ios-pwa-design.md).
+
+## Local Development
+
+```sh
+npm install
+npm run dev
+```
+
+## Build
+
+```sh
+npm test
+npm run build
+```
+
+## Cloudflare Pages
+
+- Framework preset: Vite
+- Build command: npm run build
+- Build output directory: dist
+- Root directory: /
+
+The current app uses sample market data. After choosing a stable market data API, replace the provider implementation in `functions/_shared/provider.ts`.
+
+## iPhone Usage
+
+Open the deployed `pages.dev` URL in Safari. From the share sheet, choose Add to Home Screen to install it like a PWA.
