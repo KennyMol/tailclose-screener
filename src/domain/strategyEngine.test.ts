@@ -51,4 +51,69 @@ describe("screenQuotes", () => {
 
     expect(results).toEqual([]);
   });
+
+  it("excludes quotes without any positive trigger reason", () => {
+    const results = screenQuotes(
+      [
+        {
+          code: "600003",
+          name: "空行情",
+          isST: false,
+          isSuspended: false,
+          isDelistingRisk: false
+        }
+      ],
+      defaultTailCloseStrategy
+    );
+
+    expect(results).toEqual([]);
+  });
+
+  it("allows partially missing optional market fields when other positive reasons exist", () => {
+    const results = screenQuotes(
+      [
+        {
+          ...baseQuote,
+          turnoverRate: undefined,
+          movingAverages: undefined
+        }
+      ],
+      defaultTailCloseStrategy
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0].reasons).toContain("涨幅在 0% 到 6%");
+    expect(results[0].reasons).toContain("量比大于 1.2");
+  });
+
+  it("excludes delisting-risk stocks", () => {
+    const results = screenQuotes(
+      [{ ...baseQuote, isDelistingRisk: true }],
+      defaultTailCloseStrategy
+    );
+
+    expect(results).toEqual([]);
+  });
+
+  it("requires late-session activity when strategy asks for it", () => {
+    const results = screenQuotes(
+      [{ ...baseQuote, lateSessionActive: false }],
+      { ...defaultTailCloseStrategy, requireLateSessionActive: true }
+    );
+
+    expect(results).toEqual([]);
+  });
+
+  it("sorts results by score descending", () => {
+    const results = screenQuotes(
+      [
+        { ...baseQuote, code: "600004", volumeRatio: 1.3 },
+        { ...baseQuote, code: "600005", volumeRatio: 3.5 }
+      ],
+      defaultTailCloseStrategy
+    );
+
+    expect(results).toHaveLength(2);
+    expect(results.map((result) => result.code)).toEqual(["600005", "600004"]);
+  });
 });

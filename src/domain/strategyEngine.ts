@@ -106,6 +106,10 @@ export function screenQuotes(
       reasons.push("尾盘成交活跃");
     }
 
+    if (reasons.length === 0) {
+      return [];
+    }
+
     return [
       {
         code: quote.code,
