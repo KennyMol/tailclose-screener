@@ -32,15 +32,26 @@ class AkShareProvider:
         self._ak = ak
 
     def current_quotes(self) -> list[StockQuote]:
+        errors: list[Exception] = []
         try:
             ak = self._ak
             if ak is None:
                 import akshare as ak
 
-            rows = self._rows_from_spot(ak.stock_zh_a_spot_em())
-            return [normalize_akshare_row(row) for row in rows]
+            for source_name in ("stock_zh_a_spot_em", "stock_zh_a_spot"):
+                source = getattr(ak, source_name, None)
+                if source is None:
+                    continue
+                try:
+                    rows = self._rows_from_spot(source())
+                    return [normalize_akshare_row(row) for row in rows]
+                except Exception as exc:
+                    errors.append(exc)
         except Exception as exc:
-            raise ProviderError(f"AkShare current quotes failed: {exc}") from exc
+            errors.append(exc)
+
+        detail = "; ".join(str(error) for error in errors) or "no available quote source"
+        raise ProviderError(f"AkShare current quotes failed: {detail}")
 
     @staticmethod
     def _rows_from_spot(spot: Any) -> Iterable[Mapping[str, Any]]:

@@ -91,6 +91,25 @@ def test_akshare_provider_converts_spot_rows():
     ]
 
 
+def test_akshare_provider_falls_back_to_legacy_spot_when_em_fails():
+    fake_akshare = types.SimpleNamespace(
+        stock_zh_a_spot_em=lambda: (_ for _ in ()).throw(RuntimeError("em failed")),
+        stock_zh_a_spot=lambda: [
+            {
+                "代码": "600000",
+                "名称": "浦发银行",
+                "最新价": 8.72,
+                "涨跌幅": 1.23,
+            }
+        ],
+    )
+
+    quotes = AkShareProvider(ak=fake_akshare).current_quotes()
+
+    assert quotes[0].code == "600000"
+    assert quotes[0].latest_price == pytest.approx(8.72)
+
+
 def test_akshare_provider_wraps_errors():
     def fail():
         raise RuntimeError("network down")
