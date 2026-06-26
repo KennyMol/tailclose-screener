@@ -13,9 +13,10 @@ from PySide6.QtWidgets import (
 )
 
 from tailclose_desktop.models import ScreenResult, Strategy
-from tailclose_desktop.providers.base import ProviderError
 from tailclose_desktop.providers.akshare_provider import AkShareProvider
+from tailclose_desktop.providers.base import ProviderError
 from tailclose_desktop.providers.base import QuoteProvider
+from tailclose_desktop.providers.sample import SampleProvider
 from tailclose_desktop.strategy import default_tailclose_strategy, screen_quotes
 
 
@@ -28,7 +29,7 @@ class MainWindow(QMainWindow):
         strategy: Strategy | None = None,
     ) -> None:
         super().__init__()
-        self.provider = provider or AkShareProvider()
+        self.provider = provider
         self.strategy = strategy or default_tailclose_strategy()
 
         self.setWindowTitle("尾盘买入法")
@@ -36,6 +37,10 @@ class MainWindow(QMainWindow):
 
         self.strategy_combo = QComboBox()
         self.strategy_combo.addItem(self.strategy.name, self.strategy.id)
+
+        self.provider_combo = QComboBox()
+        self.provider_combo.addItem("实时行情 AkShare", "akshare")
+        self.provider_combo.addItem("示例数据", "sample")
 
         self.refresh_button = QPushButton("刷新")
         self.refresh_button.clicked.connect(self.refresh)
@@ -52,6 +57,8 @@ class MainWindow(QMainWindow):
         toolbar_layout = QHBoxLayout()
         toolbar_layout.addWidget(QLabel("策略"))
         toolbar_layout.addWidget(self.strategy_combo, 1)
+        toolbar_layout.addWidget(QLabel("数据源"))
+        toolbar_layout.addWidget(self.provider_combo)
         toolbar_layout.addWidget(self.refresh_button)
 
         layout = QVBoxLayout()
@@ -65,7 +72,7 @@ class MainWindow(QMainWindow):
 
     def refresh(self) -> None:
         try:
-            results = screen_quotes(self.provider.current_quotes(), self.strategy)
+            results = screen_quotes(self._active_provider().current_quotes(), self.strategy)
         except ProviderError as exc:
             self.results_table.setRowCount(0)
             self.status_label.setText(f"刷新失败：{exc}")
@@ -73,6 +80,13 @@ class MainWindow(QMainWindow):
 
         self._set_results(results)
         self.status_label.setText(f"刷新完成：{len(results)} 条结果")
+
+    def _active_provider(self) -> QuoteProvider:
+        if self.provider is not None:
+            return self.provider
+        if self.provider_combo.currentData() == "sample":
+            return SampleProvider()
+        return AkShareProvider()
 
     def _set_results(self, results: list[ScreenResult]) -> None:
         self.results_table.setRowCount(len(results))

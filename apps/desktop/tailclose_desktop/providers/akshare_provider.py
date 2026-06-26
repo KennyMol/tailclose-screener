@@ -40,7 +40,7 @@ class AkShareProvider:
             rows = self._rows_from_spot(ak.stock_zh_a_spot_em())
             return [normalize_akshare_row(row) for row in rows]
         except Exception as exc:
-            raise ProviderError("AkShare current quotes failed") from exc
+            raise ProviderError(f"AkShare current quotes failed: {exc}") from exc
 
     @staticmethod
     def _rows_from_spot(spot: Any) -> Iterable[Mapping[str, Any]]:

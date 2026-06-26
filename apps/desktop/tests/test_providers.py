@@ -97,7 +97,7 @@ def test_akshare_provider_wraps_errors():
 
     provider = AkShareProvider(ak=types.SimpleNamespace(stock_zh_a_spot_em=fail))
 
-    with pytest.raises(ProviderError, match="AkShare"):
+    with pytest.raises(ProviderError, match="network down"):
         provider.current_quotes()
 
 

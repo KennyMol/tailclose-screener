@@ -14,6 +14,7 @@ def test_main_window_refresh_populates_results():
     window = MainWindow(provider=SampleProvider())
 
     assert window.windowTitle() == "尾盘买入法"
+    assert window.provider_combo.currentText() == "实时行情 AkShare"
 
     window.refresh()
 
@@ -44,6 +45,20 @@ def test_main_window_refresh_reports_provider_errors():
 
     assert window.results_table.rowCount() == 0
     assert "刷新失败" in window.status_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_main_window_can_switch_to_sample_provider():
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow()
+    window.provider_combo.setCurrentText("示例数据")
+
+    window.refresh()
+
+    assert window.results_table.rowCount() >= 1
+    assert "刷新完成" in window.status_label.text()
 
     window.close()
     app.processEvents()
