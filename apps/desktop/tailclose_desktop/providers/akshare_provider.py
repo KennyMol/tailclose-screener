@@ -5,15 +5,24 @@ from tailclose_desktop.models import StockQuote
 from tailclose_desktop.providers.base import ProviderError
 
 
+def _float_or_none(value: Any) -> float | None:
+    try:
+        if value in (None, "", "-", "--"):
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def normalize_akshare_row(row: Mapping[str, Any]) -> StockQuote:
-    name = str(row["名称"])
+    name = str(row.get("名称", ""))
     return StockQuote(
-        code=str(row["代码"]),
+        code=str(row.get("代码", "")),
         name=name,
-        latest_price=float(row["最新价"]),
-        change_percent=float(row["涨跌幅"]),
-        volume_ratio=float(row["量比"]),
-        turnover_rate=float(row["换手率"]),
+        latest_price=_float_or_none(row.get("最新价")),
+        change_percent=_float_or_none(row.get("涨跌幅")),
+        volume_ratio=_float_or_none(row.get("量比")),
+        turnover_rate=_float_or_none(row.get("换手率")),
         is_st="ST" in name.upper(),
     )
 

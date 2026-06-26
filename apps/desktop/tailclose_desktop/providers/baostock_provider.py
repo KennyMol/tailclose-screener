@@ -15,10 +15,14 @@ class BaoStockProvider:
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> list[HistoricalBar]:
+        bs = self._baostock_module()
+        logged_in = False
         try:
-            bs = self._bs
-            if bs is None:
-                import baostock as bs
+            login = bs.login()
+            if getattr(login, "error_code", "") != "0":
+                message = getattr(login, "error_msg", "")
+                raise ProviderError(f"BaoStock 登录失败: {message}")
+            logged_in = True
 
             result = bs.query_history_k_data_plus(
                 code,
@@ -29,8 +33,20 @@ class BaoStockProvider:
                 adjustflag="3",
             )
             return [self._bar_from_row(row) for row in self._rows_from_result(result)]
+        except ProviderError:
+            raise
         except Exception as exc:
             raise ProviderError("BaoStock historical daily failed") from exc
+        finally:
+            if logged_in and hasattr(bs, "logout"):
+                bs.logout()
+
+    def _baostock_module(self) -> Any:
+        if self._bs is not None:
+            return self._bs
+        import baostock as bs
+
+        return bs
 
     @staticmethod
     def _rows_from_result(result: Any) -> Iterable[Mapping[str, Any]]:

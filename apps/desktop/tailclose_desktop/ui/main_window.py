@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from tailclose_desktop.models import ScreenResult, Strategy
+from tailclose_desktop.providers.base import ProviderError
 from tailclose_desktop.providers.sample import SampleProvider
 from tailclose_desktop.strategy import default_tailclose_strategy, screen_quotes
 
@@ -62,7 +63,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
     def refresh(self) -> None:
-        results = screen_quotes(self.provider.current_quotes(), self.strategy)
+        try:
+            results = screen_quotes(self.provider.current_quotes(), self.strategy)
+        except ProviderError as exc:
+            self.results_table.setRowCount(0)
+            self.status_label.setText(f"刷新失败：{exc}")
+            return
+
         self._set_results(results)
         self.status_label.setText(f"刷新完成：{len(results)} 条结果")
 

@@ -51,6 +51,17 @@ def test_normalize_akshare_row_maps_eastmoney_fields_and_detects_st():
     )
 
 
+def test_normalize_akshare_row_tolerates_dirty_optional_numbers():
+    quote = normalize_akshare_row({"代码": "600001", "名称": "空值", "最新价": "-", "涨跌幅": ""})
+
+    assert quote.code == "600001"
+    assert quote.name == "空值"
+    assert quote.latest_price is None
+    assert quote.change_percent is None
+    assert quote.volume_ratio is None
+    assert quote.turnover_rate is None
+
+
 def test_akshare_provider_converts_spot_rows():
     fake_akshare = types.SimpleNamespace(
         stock_zh_a_spot_em=lambda: [
@@ -91,7 +102,18 @@ def test_akshare_provider_wraps_errors():
 
 
 def test_baostock_provider_returns_historical_daily_bars():
+    calls = []
+
+    def login():
+        calls.append("login")
+        return types.SimpleNamespace(error_code="0", error_msg="")
+
+    def logout():
+        calls.append("logout")
+
     fake_baostock = types.SimpleNamespace(
+        login=login,
+        logout=logout,
         query_history_k_data_plus=lambda *args, **kwargs: [
             {"date": "2026-06-25", "code": "sh.600000", "close": "8.70"},
             {"date": "2026-06-26", "code": "sh.600000", "close": "8.80"},
@@ -108,6 +130,17 @@ def test_baostock_provider_returns_historical_daily_bars():
         HistoricalBar(date="2026-06-25", code="sh.600000", close=8.7),
         HistoricalBar(date="2026-06-26", code="sh.600000", close=8.8),
     ]
+    assert calls == ["login", "logout"]
+
+
+def test_baostock_provider_raises_when_login_fails():
+    fake_baostock = types.SimpleNamespace(
+        login=lambda: types.SimpleNamespace(error_code="1", error_msg="bad token"),
+        logout=lambda: None,
+    )
+
+    with pytest.raises(ProviderError, match="登录失败"):
+        BaoStockProvider(bs=fake_baostock).historical_daily("sh.600000")
 
 
 def test_baostock_provider_wraps_errors():
