@@ -20,3 +20,9 @@ vite.config.d.ts
 *.tmp
 Thumbs.db
 .DS_Store
+
+__pycache__/
+.pytest_cache/
+.venv/
+*.py[cod]
+*.egg-info/
