@@ -5,6 +5,15 @@ from tailclose_desktop.models import HistoricalBar
 from tailclose_desktop.providers.base import ProviderError
 
 
+def to_baostock_code(code: str) -> str:
+    normalized = code.lower()
+    if normalized.startswith(("sh.", "sz.")):
+        return normalized
+    if normalized.startswith(("600", "601", "603", "605", "688")):
+        return f"sh.{normalized}"
+    return f"sz.{normalized}"
+
+
 class BaoStockProvider:
     def __init__(self, bs: Any | None = None) -> None:
         self._bs = bs
@@ -25,8 +34,8 @@ class BaoStockProvider:
             logged_in = True
 
             result = bs.query_history_k_data_plus(
-                code,
-                "date,code,close",
+                to_baostock_code(code),
+                "date,code,open,close,volume",
                 start_date=start_date,
                 end_date=end_date,
                 frequency="d",
@@ -67,5 +76,7 @@ class BaoStockProvider:
         return HistoricalBar(
             date=str(row["date"]),
             code=str(row["code"]),
+            open=float(row["open"]) if row.get("open") not in (None, "") else None,
             close=float(row["close"]),
+            volume=float(row["volume"]) if row.get("volume") not in (None, "") else None,
         )

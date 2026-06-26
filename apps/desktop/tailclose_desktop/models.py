@@ -52,3 +52,5 @@ class HistoricalBar:
     date: str
     code: str
     close: float
+    open: float | None = None
+    volume: float | None = None

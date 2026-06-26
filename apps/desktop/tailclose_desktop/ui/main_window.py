@@ -12,12 +12,31 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from tailclose_desktop.models import ScreenResult, Strategy
+from datetime import date, timedelta
+from typing import Protocol
+
+from tailclose_desktop.models import HistoricalBar, ScreenResult, Strategy, StockQuote
 from tailclose_desktop.providers.akshare_provider import AkShareProvider
 from tailclose_desktop.providers.base import ProviderError
 from tailclose_desktop.providers.base import QuoteProvider
+from tailclose_desktop.providers.baostock_provider import BaoStockProvider
 from tailclose_desktop.providers.sample import SampleProvider
-from tailclose_desktop.strategy import default_tailclose_strategy, screen_quotes
+from tailclose_desktop.strategy import (
+    default_tailclose_strategy,
+    passes_custom_realtime_rules,
+    screen_custom_tailclose_candidates,
+    screen_quotes,
+)
+
+
+class HistoryProvider(Protocol):
+    def historical_daily(
+        self,
+        code: str,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> list[HistoricalBar]:
+        ...
 
 
 class MainWindow(QMainWindow):
@@ -26,10 +45,12 @@ class MainWindow(QMainWindow):
     def __init__(
         self,
         provider: QuoteProvider | None = None,
+        history_provider: HistoryProvider | None = None,
         strategy: Strategy | None = None,
     ) -> None:
         super().__init__()
         self.provider = provider
+        self.history_provider = history_provider or BaoStockProvider()
         self.strategy = strategy or default_tailclose_strategy()
 
         self.setWindowTitle("尾盘买入法")
@@ -37,6 +58,7 @@ class MainWindow(QMainWindow):
 
         self.strategy_combo = QComboBox()
         self.strategy_combo.addItem(self.strategy.name, self.strategy.id)
+        self.strategy_combo.addItem("我的策略", "custom-tailclose")
 
         self.provider_combo = QComboBox()
         self.provider_combo.addItem("实时行情 AkShare", "akshare")
@@ -72,14 +94,18 @@ class MainWindow(QMainWindow):
 
     def refresh(self) -> None:
         try:
-            results = screen_quotes(self._active_provider().current_quotes(), self.strategy)
+            quotes = self._active_provider().current_quotes()
+            if self.strategy_combo.currentData() == "custom-tailclose":
+                results = self._screen_custom_strategy(quotes)
+            else:
+                results = screen_quotes(quotes, self.strategy)
         except ProviderError as exc:
             self.results_table.setRowCount(0)
             self.status_label.setText(f"刷新失败：{exc}")
             return
 
         self._set_results(results)
-        self.status_label.setText(f"刷新完成：{len(results)} 条结果")
+        self.status_label.setText(f"刷新完成：{len(results)} 条结果（{self.strategy_combo.currentText()}）")
 
     def _active_provider(self) -> QuoteProvider:
         if self.provider is not None:
@@ -87,6 +113,23 @@ class MainWindow(QMainWindow):
         if self.provider_combo.currentData() == "sample":
             return SampleProvider()
         return AkShareProvider()
+
+    def _screen_custom_strategy(self, quotes: list[StockQuote]) -> list[ScreenResult]:
+        candidates: list[tuple[StockQuote, list[HistoricalBar]]] = []
+        realtime_matches = [quote for quote in quotes if passes_custom_realtime_rules(quote)]
+        end_date = date.today()
+        start_date = end_date - timedelta(days=20)
+        for quote in realtime_matches:
+            try:
+                history = self.history_provider.historical_daily(
+                    quote.code,
+                    start_date=start_date.isoformat(),
+                    end_date=end_date.isoformat(),
+                )
+            except ProviderError:
+                continue
+            candidates.append((quote, history))
+        return screen_custom_tailclose_candidates(candidates)
 
     def _set_results(self, results: list[ScreenResult]) -> None:
         self.results_table.setRowCount(len(results))
