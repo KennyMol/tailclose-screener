@@ -14,7 +14,8 @@ from PySide6.QtWidgets import (
 
 from tailclose_desktop.models import ScreenResult, Strategy
 from tailclose_desktop.providers.base import ProviderError
-from tailclose_desktop.providers.sample import SampleProvider
+from tailclose_desktop.providers.akshare_provider import AkShareProvider
+from tailclose_desktop.providers.base import QuoteProvider
 from tailclose_desktop.strategy import default_tailclose_strategy, screen_quotes
 
 
@@ -23,11 +24,11 @@ class MainWindow(QMainWindow):
 
     def __init__(
         self,
-        provider: SampleProvider | None = None,
+        provider: QuoteProvider | None = None,
         strategy: Strategy | None = None,
     ) -> None:
         super().__init__()
-        self.provider = provider or SampleProvider()
+        self.provider = provider or AkShareProvider()
         self.strategy = strategy or default_tailclose_strategy()
 
         self.setWindowTitle("尾盘买入法")

@@ -5,12 +5,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtWidgets import QApplication
 
 from tailclose_desktop.providers.base import ProviderError
+from tailclose_desktop.providers.sample import SampleProvider
 from tailclose_desktop.ui.main_window import MainWindow
 
 
 def test_main_window_refresh_populates_results():
     app = QApplication.instance() or QApplication([])
-    window = MainWindow()
+    window = MainWindow(provider=SampleProvider())
 
     assert window.windowTitle() == "尾盘买入法"
 
