@@ -15,3 +15,13 @@ Run tests:
 ```powershell
 pytest
 ```
+
+## Package
+
+Build the desktop executable with PyInstaller:
+
+```powershell
+pyinstaller packaging/tailclose-screener.spec
+```
+
+The packaged application is written to `apps/desktop/dist/tailclose-screener/`.
