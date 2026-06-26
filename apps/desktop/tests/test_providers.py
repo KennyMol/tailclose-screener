@@ -21,8 +21,8 @@ def test_sample_provider_returns_deterministic_matching_a_share_quotes():
     assert all(isinstance(quote, StockQuote) for quote in quotes)
     first = quotes[0]
     assert first.name == "浦发银行"
-    assert first.price == pytest.approx(8.8)
-    assert first.change_pct == pytest.approx(2.1)
+    assert first.latest_price == pytest.approx(8.8)
+    assert first.change_percent == pytest.approx(2.1)
     assert first.volume_ratio == pytest.approx(1.8)
     assert first.turnover_rate == pytest.approx(3.2)
     assert first.is_st is False
@@ -43,8 +43,8 @@ def test_normalize_akshare_row_maps_eastmoney_fields_and_detects_st():
     assert quote == StockQuote(
         code="600000",
         name="ST浦发",
-        price=8.72,
-        change_pct=-1.23,
+        latest_price=8.72,
+        change_percent=-1.23,
         volume_ratio=2.4,
         turnover_rate=4.5,
         is_st=True,
@@ -71,8 +71,8 @@ def test_akshare_provider_converts_spot_rows():
         StockQuote(
             code="600000",
             name="浦发银行",
-            price=8.72,
-            change_pct=1.23,
+            latest_price=8.72,
+            change_percent=1.23,
             volume_ratio=2.4,
             turnover_rate=4.5,
             is_st=False,

@@ -10,8 +10,8 @@ def normalize_akshare_row(row: Mapping[str, Any]) -> StockQuote:
     return StockQuote(
         code=str(row["代码"]),
         name=name,
-        price=float(row["最新价"]),
-        change_pct=float(row["涨跌幅"]),
+        latest_price=float(row["最新价"]),
+        change_percent=float(row["涨跌幅"]),
         volume_ratio=float(row["量比"]),
         turnover_rate=float(row["换手率"]),
         is_st="ST" in name.upper(),
