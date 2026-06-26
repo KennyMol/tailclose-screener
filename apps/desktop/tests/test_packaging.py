@@ -11,7 +11,9 @@ def test_pyinstaller_spec_configures_desktop_executable():
     assert "tailclose-screener" in spec_path.name
 
     spec_text = spec_path.read_text(encoding="utf-8").replace("\\", "/")
-    assert "tailclose_desktop/main.py" in spec_text
+    assert "'tailclose_desktop' / 'main.py'" in spec_text
+    assert "SPECPATH" in spec_text
+    assert "pathex=[str(project_dir)]" in spec_text
     assert "collect_submodules('akshare')" in spec_text
     assert "collect_submodules('baostock')" in spec_text
     assert "name='tailclose-screener'" in spec_text

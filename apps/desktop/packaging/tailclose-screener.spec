@@ -1,6 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 from PyInstaller.utils.hooks import collect_submodules
+from pathlib import Path
+
+
+project_dir = Path(SPECPATH).parent
 
 
 hiddenimports = []
@@ -8,8 +12,8 @@ hiddenimports += collect_submodules('akshare')
 hiddenimports += collect_submodules('baostock')
 
 a = Analysis(
-    ['tailclose_desktop/main.py'],
-    pathex=[],
+    [str(project_dir / 'tailclose_desktop' / 'main.py')],
+    pathex=[str(project_dir)],
     binaries=[],
     datas=[],
     hiddenimports=hiddenimports,
