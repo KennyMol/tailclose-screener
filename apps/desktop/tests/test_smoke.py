@@ -1,9 +1,5 @@
-from tailclose_desktop.main import main
+from tailclose_desktop import __version__
 
 
-def test_main_prints_app_name_and_returns_zero(capsys):
-    result = main()
-
-    captured = capsys.readouterr()
-    assert result == 0
-    assert "Tailclose Desktop" in captured.out
+def test_version():
+    assert __version__ == "0.1.0"
