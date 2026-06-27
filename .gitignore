@@ -6,6 +6,7 @@ outputs/
 node_modules/
 dist/
 dist-tushare-fix/
+dist-copyable-error/
 build/
 *.tsbuildinfo
 vite.config.js

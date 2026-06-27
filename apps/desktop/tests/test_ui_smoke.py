@@ -2,6 +2,7 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from tailclose_desktop.models import HistoricalBar, StockQuote
@@ -46,6 +47,16 @@ def test_main_window_refresh_reports_provider_errors():
 
     assert window.results_table.rowCount() == 0
     assert "刷新失败" in window.status_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_main_window_status_message_can_be_selected_for_copying():
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow()
+
+    assert window.status_label.textInteractionFlags() & Qt.TextInteractionFlag.TextSelectableByMouse
 
     window.close()
     app.processEvents()

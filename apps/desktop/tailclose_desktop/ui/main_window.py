@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -77,6 +78,10 @@ class MainWindow(QMainWindow):
         self.results_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
         self.status_label = QLabel("准备就绪")
+        self.status_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+            | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
 
         toolbar_layout = QHBoxLayout()
         toolbar_layout.addWidget(QLabel("策略"))
