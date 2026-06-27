@@ -10,6 +10,7 @@ from tailclose_desktop.providers.akshare_provider import (
 from tailclose_desktop.providers.baostock_provider import BaoStockProvider
 from tailclose_desktop.providers.base import ProviderError, QuoteProvider
 from tailclose_desktop.providers.sample import SampleProvider
+from tailclose_desktop.providers.tushare_provider import TushareProvider
 
 
 def test_sample_provider_returns_deterministic_matching_a_share_quotes():
@@ -170,3 +171,159 @@ def test_baostock_provider_wraps_errors():
 
     with pytest.raises(ProviderError, match="BaoStock"):
         provider.historical_daily("sh.600000")
+
+
+class FakeTushareResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self.payload
+
+
+class FakeTushareSession:
+    def __init__(self):
+        self.requests = []
+
+    def post(self, url, json, timeout):
+        self.requests.append(json)
+        api_name = json["api_name"]
+        if api_name == "stock_basic":
+            return FakeTushareResponse(
+                {
+                    "code": 0,
+                    "msg": "",
+                    "data": {
+                        "fields": ["ts_code", "name", "market", "list_status"],
+                        "items": [["600000.SH", "浦发银行", "主板", "L"]],
+                    },
+                }
+            )
+        if api_name == "daily":
+            if json["params"].get("trade_date") == "20260627":
+                return FakeTushareResponse(
+                    {
+                        "code": 0,
+                        "msg": "",
+                        "data": {
+                            "fields": ["ts_code", "trade_date", "open", "close", "pct_chg", "vol"],
+                            "items": [],
+                        },
+                    }
+                )
+            return FakeTushareResponse(
+                {
+                    "code": 0,
+                    "msg": "",
+                    "data": {
+                        "fields": ["ts_code", "trade_date", "open", "close", "pct_chg", "vol"],
+                        "items": [["600000.SH", "20260626", 12.0, 12.6, 5.0, 2200.0]],
+                    },
+                }
+            )
+        if api_name == "daily_basic":
+            return FakeTushareResponse(
+                {
+                    "code": 0,
+                    "msg": "",
+                    "data": {
+                        "fields": ["ts_code", "trade_date", "turnover_rate", "volume_ratio"],
+                        "items": [["600000.SH", "20260626", 10.0, 1.5]],
+                    },
+                }
+            )
+        raise AssertionError(f"unexpected api {api_name}")
+
+
+def test_tushare_provider_builds_quotes_from_daily_basic_and_daily():
+    session = FakeTushareSession()
+    provider = TushareProvider(token="token", session=session)
+
+    quotes = provider.current_quotes()
+
+    assert quotes == [
+        StockQuote(
+            code="600000",
+            name="浦发银行",
+            latest_price=12.6,
+            change_percent=5.0,
+            volume_ratio=1.5,
+            turnover_rate=10.0,
+            is_st=False,
+        )
+    ]
+    assert {request["api_name"] for request in session.requests} == {
+        "stock_basic",
+        "daily",
+        "daily_basic",
+    }
+    daily_request = next(request for request in session.requests if request["api_name"] == "daily")
+    assert daily_request["params"]["trade_date"] == "20260627"
+
+
+def test_tushare_provider_tries_previous_day_when_latest_day_has_no_daily_rows(monkeypatch):
+    class WeekendSession(FakeTushareSession):
+        def post(self, url, json, timeout):
+            if json["api_name"] == "daily" and json["params"].get("trade_date") == "20260627":
+                self.requests.append(json)
+                return FakeTushareResponse(
+                    {"code": 0, "msg": "", "data": {"fields": ["ts_code"], "items": []}}
+                )
+            return super().post(url, json, timeout)
+
+    class FixedDate:
+        @classmethod
+        def today(cls):
+            from datetime import date
+
+            return date(2026, 6, 27)
+
+    import tailclose_desktop.providers.tushare_provider as provider_module
+
+    monkeypatch.setattr(provider_module, "date", FixedDate)
+    session = WeekendSession()
+
+    quotes = TushareProvider(token="token", session=session).current_quotes()
+
+    assert quotes[0].code == "600000"
+    daily_dates = [
+        request["params"]["trade_date"]
+        for request in session.requests
+        if request["api_name"] == "daily" and "trade_date" in request["params"]
+    ]
+    assert daily_dates[:2] == ["20260627", "20260626"]
+
+
+def test_tushare_provider_reports_permission_errors():
+    class PermissionDeniedSession:
+        def post(self, url, json, timeout):
+            return FakeTushareResponse(
+                {
+                    "code": -2001,
+                    "msg": "抱歉，您没有接口(daily)访问权限",
+                    "data": {"fields": [], "items": []},
+                }
+            )
+
+    with pytest.raises(ProviderError, match="没有接口"):
+        TushareProvider(token="token", session=PermissionDeniedSession()).current_quotes()
+
+
+def test_tushare_provider_requires_token(monkeypatch):
+    monkeypatch.delenv("TUSHARE_TOKEN", raising=False)
+
+    with pytest.raises(ProviderError, match="TUSHARE_TOKEN"):
+        TushareProvider(session=FakeTushareSession()).current_quotes()
+
+
+def test_tushare_provider_returns_historical_daily_bars():
+    provider = TushareProvider(token="token", session=FakeTushareSession())
+
+    bars = provider.historical_daily("600000", start_date="2026-06-20", end_date="2026-06-26")
+
+    assert bars == [
+        HistoricalBar(date="2026-06-26", code="600000", close=12.6, open=12.0, volume=2200.0)
+    ]

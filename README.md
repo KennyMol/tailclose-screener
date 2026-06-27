@@ -4,7 +4,7 @@ Tail-close stock screening tools for A-share observation.
 
 ## Apps
 
-- `apps/desktop`: Windows desktop EXE direction with AkShare/baostock data providers, manual strategy support foundations, local settings, backtest shell, and Feishu notification module.
+- `apps/desktop`: Windows desktop EXE direction with AkShare/Tushare current quotes, baostock/Tushare history providers, manual strategy support foundations, local settings, backtest shell, and Feishu notification module.
 - root PWA: earlier Cloudflare Pages prototype retained for reference.
 
 ## Desktop App

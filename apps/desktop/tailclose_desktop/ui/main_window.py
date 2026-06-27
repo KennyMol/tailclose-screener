@@ -21,6 +21,7 @@ from tailclose_desktop.providers.base import ProviderError
 from tailclose_desktop.providers.base import QuoteProvider
 from tailclose_desktop.providers.baostock_provider import BaoStockProvider
 from tailclose_desktop.providers.sample import SampleProvider
+from tailclose_desktop.providers.tushare_provider import TushareProvider
 from tailclose_desktop.strategy import (
     default_tailclose_strategy,
     passes_custom_realtime_rules,
@@ -62,6 +63,7 @@ class MainWindow(QMainWindow):
 
         self.provider_combo = QComboBox()
         self.provider_combo.addItem("实时行情 AkShare", "akshare")
+        self.provider_combo.addItem("Tushare", "tushare")
         self.provider_combo.addItem("示例数据", "sample")
 
         self.refresh_button = QPushButton("刷新")
@@ -112,6 +114,8 @@ class MainWindow(QMainWindow):
             return self.provider
         if self.provider_combo.currentData() == "sample":
             return SampleProvider()
+        if self.provider_combo.currentData() == "tushare":
+            return TushareProvider()
         return AkShareProvider()
 
     def _screen_custom_strategy(self, quotes: list[StockQuote]) -> list[ScreenResult]:
@@ -121,7 +125,7 @@ class MainWindow(QMainWindow):
         start_date = end_date - timedelta(days=20)
         for quote in realtime_matches:
             try:
-                history = self.history_provider.historical_daily(
+                history = self._active_history_provider().historical_daily(
                     quote.code,
                     start_date=start_date.isoformat(),
                     end_date=end_date.isoformat(),
@@ -130,6 +134,11 @@ class MainWindow(QMainWindow):
                 continue
             candidates.append((quote, history))
         return screen_custom_tailclose_candidates(candidates)
+
+    def _active_history_provider(self) -> HistoryProvider:
+        if self.provider_combo.currentData() == "tushare":
+            return TushareProvider()
+        return self.history_provider
 
     def _set_results(self, results: list[ScreenResult]) -> None:
         self.results_table.setRowCount(len(results))

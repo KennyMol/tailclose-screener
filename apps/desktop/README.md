@@ -16,6 +16,17 @@ Run tests:
 pytest
 ```
 
+## Tushare
+
+To use the Tushare data source, set your token as an environment variable before launching the app:
+
+```powershell
+$env:TUSHARE_TOKEN="your-token"
+python -m tailclose_desktop.main
+```
+
+The token needs access to the `stock_basic`, `daily`, and `daily_basic` Tushare Pro APIs.
+
 ## Package
 
 Build the desktop executable with PyInstaller:

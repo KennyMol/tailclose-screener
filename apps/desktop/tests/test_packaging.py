@@ -25,3 +25,11 @@ def test_readme_documents_packaging_command_and_output_path():
     assert "## Package" in readme
     assert "pyinstaller packaging/tailclose-screener.spec" in readme
     assert "apps/desktop/dist/tailclose-screener/" in readme
+
+
+def test_readme_documents_tushare_token_setup():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "TUSHARE_TOKEN" in readme
+    assert "stock_basic" in readme
+    assert "daily_basic" in readme

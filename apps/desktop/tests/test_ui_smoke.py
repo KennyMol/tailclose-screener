@@ -65,6 +65,20 @@ def test_main_window_can_switch_to_sample_provider():
     app.processEvents()
 
 
+def test_main_window_can_select_tushare_provider(monkeypatch):
+    monkeypatch.delenv("TUSHARE_TOKEN", raising=False)
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow()
+    window.provider_combo.setCurrentText("Tushare")
+
+    window.refresh()
+
+    assert "TUSHARE_TOKEN" in window.status_label.text()
+
+    window.close()
+    app.processEvents()
+
+
 def test_main_window_runs_custom_strategy_with_history_provider():
     class QuoteFixtureProvider:
         def current_quotes(self):
