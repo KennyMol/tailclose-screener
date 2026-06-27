@@ -32,6 +32,10 @@ def _plain_code(ts_code: str) -> str:
     return ts_code.split(".", maxsplit=1)[0]
 
 
+def _is_permission_error(error: ProviderError) -> bool:
+    return "没有接口" in str(error) or "访问权限" in str(error)
+
+
 class TushareProvider:
     def __init__(
         self,
@@ -57,11 +61,12 @@ class TushareProvider:
 
         quotes: list[StockQuote] = []
         for ts_code, daily in daily_by_code.items():
-            name = names.get(ts_code, "")
+            plain_code = _plain_code(ts_code)
+            name = names.get(ts_code, plain_code)
             basic = basic_by_code.get(ts_code, {})
             quotes.append(
                 StockQuote(
-                    code=_plain_code(ts_code),
+                    code=plain_code,
                     name=name,
                     latest_price=_float_or_none(daily.get("close")),
                     change_percent=_float_or_none(daily.get("pct_chg")),
@@ -102,11 +107,16 @@ class TushareProvider:
         return sorted(bars, key=lambda bar: bar.date)
 
     def _stock_names(self) -> dict[str, str]:
-        rows = self._request_rows(
-            "stock_basic",
-            {"exchange": "", "list_status": "L"},
-            fields="ts_code,name,market,list_status",
-        )
+        try:
+            rows = self._request_rows(
+                "stock_basic",
+                {"exchange": "", "list_status": "L"},
+                fields="ts_code,name,market,list_status",
+            )
+        except ProviderError as exc:
+            if _is_permission_error(exc):
+                return {}
+            raise
         return {str(row.get("ts_code", "")): str(row.get("name", "")) for row in rows}
 
     def _latest_daily_rows(self) -> tuple[str, list[dict[str, Any]]]:

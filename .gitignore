@@ -5,6 +5,7 @@ outputs/
 
 node_modules/
 dist/
+dist-tushare-fix/
 build/
 *.tsbuildinfo
 vite.config.js

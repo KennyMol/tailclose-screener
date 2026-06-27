@@ -312,6 +312,35 @@ def test_tushare_provider_reports_permission_errors():
         TushareProvider(token="token", session=PermissionDeniedSession()).current_quotes()
 
 
+def test_tushare_provider_continues_when_stock_basic_is_not_permitted():
+    class StockBasicDeniedSession(FakeTushareSession):
+        def post(self, url, json, timeout):
+            if json["api_name"] == "stock_basic":
+                self.requests.append(json)
+                return FakeTushareResponse(
+                    {
+                        "code": -2001,
+                        "msg": "抱歉，您没有接口(stock_basic)访问权限",
+                        "data": {"fields": [], "items": []},
+                    }
+                )
+            return super().post(url, json, timeout)
+
+    quotes = TushareProvider(token="token", session=StockBasicDeniedSession()).current_quotes()
+
+    assert quotes == [
+        StockQuote(
+            code="600000",
+            name="600000",
+            latest_price=12.6,
+            change_percent=5.0,
+            volume_ratio=1.5,
+            turnover_rate=10.0,
+            is_st=False,
+        )
+    ]
+
+
 def test_tushare_provider_requires_token(monkeypatch):
     monkeypatch.delenv("TUSHARE_TOKEN", raising=False)
 
